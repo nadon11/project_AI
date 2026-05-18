@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistant Académique IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Variables ─────────────────────────────────────── */
+    :root {
+      --bg:        #0a0c10;
+      --surface:   #10131a;
+      --card:      #141820;
+      --border:    #1e2433;
+      --accent:    #4f8ef7;
+      --accent2:   #a78bfa;
+      --accent3:   #34d399;
+      --accent4:   #f97316;
+      --accent5:   #fb7185;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --tag-bg:    #1a2035;
+    }
+
+    /* ── Reset ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ─────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Glow blobs ────────────────────────────────────── */
+    .blob {
+      position: fixed; border-radius: 50%;
+      filter: blur(120px); opacity: 0.07; pointer-events: none; z-index: 0;
+    }
+    .blob-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -150px; }
+    .blob-2 { width: 500px; height: 500px; background: var(--accent2); bottom: -150px; right: -100px; }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Sidebar ───────────────────────────────────────── */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 0;
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto;
+    }
+
+    .logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-mark {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.25rem;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .logo-sub {
+      font-size: 0.7rem; color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px; padding-left: 42px;
+    }
+
+    .nav { padding: 16px 12px; flex: 1; }
+
+    .nav-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted);
+      padding: 0 12px; margin-bottom: 8px; margin-top: 16px;
+    }
+    .nav-label:first-child { margin-top: 0; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      cursor: pointer; transition: all 0.18s ease;
+      font-size: 0.88rem; font-weight: 400; color: var(--muted);
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover  { background: var(--card); color: var(--text); }
+    .nav-item.active { background: var(--card); color: var(--text); }
+    .nav-item.active .nav-dot { opacity: 1; }
+
+    .nav-icon {
+      width: 32px; height: 32px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .nav-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); margin-left: auto; opacity: 0;
+      transition: opacity 0.18s;
+    }
+
+    .c-rag     { background: #0f1e3a; }
+    .c-arxiv   { background: #1a1230; }
+    .c-resume  { background: #0f2820; }
+    .c-explain { background: #2a1810; }
+    .c-plan    { background: #2a1020; }
+    .c-agent   { background: #1a1a10; }
+
+    /* subjects list */
+    .subjects-section { padding: 0 12px 20px; }
+    .subject-chip {
+      display: inline-block;
+      padding: 4px 10px; margin: 3px 2px;
+      border-radius: 20px; font-size: 0.72rem;
+      background: var(--tag-bg); color: var(--muted);
+      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Main content ──────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .topbar {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(10,12,16,0.8); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .page-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .page-title span { color: var(--accent); }
+    .status-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem; color: var(--muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent3);
+      box-shadow: 0 0 8px var(--accent3);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* Content area */
+    .content { flex: 1; padding: 32px; max-width: 900px; }
+
+    /* ── Panels ────────────────────────────────────────── */
+    .panel { display: none; animation: fadeUp 0.3s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-header { margin-bottom: 28px; }
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.7rem; font-weight: 800;
+      line-height: 1.2; margin-bottom: 6px;
+    }
+    .panel-desc { color: var(--muted); font-size: 0.88rem; }
+
+    /* ── Cards ─────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Form elements ─────────────────────────────────── */
+    label {
+      display: block; font-size: 0.78rem; font-weight: 500;
+      color: var(--muted); margin-bottom: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%; padding: 12px 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      outline: none; resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+    }
+    textarea { min-height: 90px; }
+    select option { background: var(--surface); }
+
+    /* ── Buttons ───────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px; border-radius: 9px;
+      font-weight: 600; font-size: 0.88rem; cursor: pointer;
+      border: none; transition: all 0.18s ease;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #3b74e0);
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,142,247,0.35); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Spinner ───────────────────────────────────────── */
+    .spinner {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Answer box ────────────────────────────────────── */
+    .answer-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+      font-size: 0.9rem; line-height: 1.75;
+      white-space: pre-wrap; display: none;
+      margin-top: 16px;
+    }
+    .answer-box.visible { display: block; animation: fadeUp 0.3s ease; }
+    .answer-box strong { color: var(--accent); }
+
+    /* ── Chunk pills ───────────────────────────────────── */
+    .chunks-area { margin-top: 12px; display: none; }
+    .chunks-area.visible { display: block; }
+    .chunks-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .chunk-pill {
+      background: var(--tag-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+    .chunk-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; color: var(--accent); margin-bottom: 4px;
+    }
+    .chunk-preview { color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+
+    /* ── ArXiv cards ───────────────────────────────────── */
+    .arxiv-grid { display: grid; gap: 14px; margin-top: 16px; }
+    .arxiv-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px;
+      transition: border-color 0.18s;
+    }
+    .arxiv-card:hover { border-color: var(--accent2); }
+    .arxiv-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--text); margin-bottom: 8px;
+      line-height: 1.35;
+    }
+    .arxiv-title a { color: inherit; text-decoration: none; }
+    .arxiv-title a:hover { color: var(--accent); }
+    .arxiv-meta {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .arxiv-summary {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.6;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .arxiv-tag {
+      background: rgba(167,139,250,0.12); color: var(--accent2);
+      padding: 2px 8px; border-radius: 4px; font-size: 0.68rem;
+    }
+
+    /* ── Row util ──────────────────────────────────────── */
+    .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .row .field { flex: 1; min-width: 180px; }
+    .row .field-sm { width: 120px; flex-shrink: 0; }
+
+    /* ── Error ─────────────────────────────────────────── */
+    .error-msg {
+      background: rgba(251,113,133,0.1); border: 1px solid rgba(251,113,133,0.3);
+      border-radius: 8px; padding: 12px 16px;
+      color: var(--accent5); font-size: 0.85rem;
+      margin-top: 12px; display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Accent coloring per panel ─────────────────────── */
+    #panel-arxiv   .btn-primary { background: linear-gradient(135deg,var(--accent2),#7c5cde); }
+    #panel-resume  .btn-primary { background: linear-gradient(135deg,var(--accent3),#059669); }
+    #panel-explain .btn-primary { background: linear-gradient(135deg,var(--accent4),#ea580c); }
+    #panel-plan    .btn-primary { background: linear-gradient(135deg,var(--accent5),#e11d48); }
+    #panel-agent   .btn-primary { background: linear-gradient(135deg,#fbbf24,#d97706); }
+
+    /* ── Scrollbar ─────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { padding: 20px; }
+      .topbar  { padding: 14px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🎓</div>
+        AcadémIA
+      </div>
+      <div class="logo-sub">v1.0 · Groq + RAG + Agent</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-label">Fonctionnalités</div>
+
+      <button class="nav-item active" data-panel="rag">
+        <div class="nav-icon c-rag">📖</div>
+        Questions PDF
+        <div class="nav-dot"></div>
+      </button>
+
+      <button class="nav-item" data-panel="arxiv">
+        <div class="nav-icon c-arxiv">🔬</div>
+        Recherche arXiv
+        <div class="nav-dot"></div>
+      </button>
+
+      <button class="nav-item" data-panel="resume">
+        <div class="nav-icon c-resume">📝</div>
+        Résumer un cours
+        <div class="nav-dot"></div>
+      </button>
+
+      <button class="nav-item" data-panel="explain">
+        <div class="nav-icon c-explain">💡</div>
+        Expliquer un concept
+        <div class="nav-dot"></div>
+      </button>
+
+      <button class="nav-item" data-panel="plan">
+        <div class="nav-icon c-plan">🗂️</div>
+        Plan de révision
+        <div class="nav-dot"></div>
+      </button>
+
+      <button class="nav-item" data-panel="agent">
+        <div class="nav-icon c-agent">🤖</div>
+        Agent IA
+        <div class="nav-dot"></div>
+      </button>
+
+      <div class="nav-label" style="margin-top:28px">Matières chargées</div>
+    </nav>
+
+    <div class="subjects-section">
+      {% if subjects %}
+        {% for s in subjects %}
+          <span class="subject-chip">{{ s }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="subject-chip" style="color:var(--accent5)">Aucun PDF trouvé</span>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title">Assistant <span>Académique</span></div>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        Groq · llama-3.3-70b
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── Panel 1 : Questions PDF (RAG) ── -->
+      <div class="panel active" id="panel-rag">
+        <div class="panel-header">
+          <div class="panel-title">📖 Questions sur les cours</div>
+          <div class="panel-desc">Pose une question ; l'assistant cherche la réponse dans tes PDF.</div>
+        </div>
+
+        <div class="card">
+          <label>Ta question</label>
+          <textarea id="rag-question" placeholder="Ex : Qu'est-ce qu'un agent IA ?"></textarea>
+          <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-primary" id="rag-btn">
+              <span>Rechercher</span>
+              <div class="spinner" id="rag-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="rag-error"></div>
+        </div>
+
+        <div class="answer-box" id="rag-answer"></div>
+
+        <div class="chunks-area" id="rag-chunks">
+          <div class="chunks-title">📂 Extraits utilisés</div>
+          <div id="rag-chunks-list"></div>
+        </div>
+      </div>
+
+      <!-- ── Panel 2 : ArXiv ── -->
+      <div class="panel" id="panel-arxiv">
+        <div class="panel-header">
+          <div class="panel-title">🔬 Recherche arXiv</div>
+          <div class="panel-desc">Trouve des articles scientifiques récents sur ton sujet.</div>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="field">
+              <label>Requête de recherche</label>
+              <input type="text" id="arxiv-query" placeholder="Ex : retrieval augmented generation" />
+            </div>
+            <div class="field-sm">
+              <label>Nb d'articles</label>
+              <select id="arxiv-max">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="arxiv-btn">
+              <span>Chercher</span>
+              <div class="spinner" id="arxiv-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="arxiv-error"></div>
+        </div>
+
+        <div class="arxiv-grid" id="arxiv-results"></div>
+      </div>
+
+      <!-- ── Panel 3 : Résumer ── -->
+      <div class="panel" id="panel-resume">
+        <div class="panel-header">
+          <div class="panel-title">📝 Résumer un cours</div>
+          <div class="panel-desc">Obtiens un résumé structuré d'un chapitre ou d'un sujet depuis tes PDF.</div>
+        </div>
+
+        <div class="card">
+          <label>Sujet ou chapitre à résumer</label>
+          <input type="text" id="resume-sujet" placeholder="Ex : Le RAG en NLP, Réseaux de neurones convolutifs…" />
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="resume-btn">
+              <span>Résumer</span>
+              <div class="spinner" id="resume-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="resume-error"></div>
+        </div>
+
+        <div class="answer-box" id="resume-answer"></div>
+      </div>
+
+      <!-- ── Panel 4 : Expliquer ── -->
+      <div class="panel" id="panel-explain">
+        <div class="panel-header">
+          <div class="panel-title">💡 Expliquer un concept</div>
+          <div class="panel-desc">Comprends n'importe quel concept avec une explication simple et des analogies.</div>
+        </div>
+
+        <div class="card">
+          <label>Concept à expliquer</label>
+          <input type="text" id="explain-concept" placeholder="Ex : Attention mechanism, FAISS, LoRA…" />
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="explain-btn">
+              <span>Expliquer</span>
+              <div class="spinner" id="explain-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="explain-error"></div>
+        </div>
+
+        <div class="answer-box" id="explain-answer"></div>
+      </div>
+
+      <!-- ── Panel 5 : Plan de révision ── -->
+      <div class="panel" id="panel-plan">
+        <div class="panel-header">
+          <div class="panel-title">🗂️ Plan de révision</div>
+          <div class="panel-desc">Génère un plan de révision structuré pour un sujet ou un examen.</div>
+        </div>
+
+        <div class="card">
+          <label>Sujet à réviser</label>
+          <input type="text" id="plan-sujet" placeholder="Ex : Agents IA, Transformers, Machine Learning…" />
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="plan-btn">
+              <span>Générer le plan</span>
+              <div class="spinner" id="plan-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="plan-error"></div>
+        </div>
+
+        <div class="answer-box" id="plan-answer"></div>
+      </div>
+
+      <!-- ── Panel 6 : Agent ── -->
+      <div class="panel" id="panel-agent">
+        <div class="panel-header">
+          <div class="panel-title">🤖 Agent IA</div>
+          <div class="panel-desc">
+            L'agent peut utiliser des outils : calculer une moyenne, définir un concept, créer un plan.
+          </div>
+        </div>
+
+        <div class="card" style="border-color: rgba(251,191,36,0.2);">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:6px 12px;"
+              onclick="fillAgent('Calcule la moyenne de [14, 12, 16, 9, 15]')">
+              📊 Calcul de moyenne
+            </button>
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:6px 12px;"
+              onclick="fillAgent('Prépare un plan de révision sur les réseaux de neurones')">
+              🗂️ Plan de révision
+            </button>
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:6px 12px;"
+              onclick="fillAgent('Donne-moi une définition simple du RAG')">
+              💡 Définition
+            </button>
+          </div>
+
+          <label>Demande à l'agent</label>
+          <textarea id="agent-question" placeholder="Ex : Calcule la moyenne de [13, 16, 9, 14] puis dis-moi si c'est satisfaisant."></textarea>
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="agent-btn">
+              <span>Envoyer à l'agent</span>
+              <div class="spinner" id="agent-spin"></div>
+            </button>
+          </div>
+          <div class="error-msg" id="agent-error"></div>
+        </div>
+
+        <div class="answer-box" id="agent-answer"></div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+  // ── Navigation ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+    });
+  });
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function setLoading(btnId, spinId, loading) {
+    const btn  = document.getElementById(btnId);
+    const spin = document.getElementById(spinId);
+    btn.disabled = loading;
+    spin.style.display = loading ? 'block' : 'none';
+  }
+
+  function showAnswer(boxId, text) {
+    const box = document.getElementById(boxId);
+    box.textContent = text;
+    box.classList.add('visible');
+  }
+
+  function showError(errId, msg) {
+    const el = document.getElementById(errId);
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideError(errId) {
+    document.getElementById(errId).classList.remove('visible');
+  }
+
+  async function post(url, body) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return r.json();
+  }
+
+  // Enter key support for single inputs
+  ['rag-question','arxiv-query','resume-sujet','explain-concept','plan-sujet','agent-question']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const evName = el.tagName === 'TEXTAREA' ? 'keydown' : 'keypress';
+      el.addEventListener(evName, e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          const map = {
+            'rag-question':    'rag-btn',
+            'arxiv-query':     'arxiv-btn',
+            'resume-sujet':    'resume-btn',
+            'explain-concept': 'explain-btn',
+            'plan-sujet':      'plan-btn',
+            'agent-question':  'agent-btn',
+          };
+          document.getElementById(map[id])?.click();
+        }
+      });
+    });
+
+  // ── RAG ─────────────────────────────────────────────────────────────────────
+  document.getElementById('rag-btn').addEventListener('click', async () => {
+    const q = document.getElementById('rag-question').value.trim();
+    if (!q) return;
+    hideError('rag-error');
+    setLoading('rag-btn', 'rag-spin', true);
+
+    const data = await post('/api/rag', { question: q });
+    setLoading('rag-btn', 'rag-spin', false);
+
+    if (data.error) { showError('rag-error', data.error); return; }
+
+    showAnswer('rag-answer', data.answer);
+
+    // Chunks
+    if (data.chunks && data.chunks.length) {
+      const list = document.getElementById('rag-chunks-list');
+      list.innerHTML = '';
+      data.chunks.forEach(c => {
+        list.innerHTML += `
+          <div class="chunk-pill">
+            <div class="chunk-meta">${c.subject} / ${c.source} · page ${c.page}</div>
+            <div class="chunk-preview">${c.preview}…</div>
+          </div>`;
+      });
+      document.getElementById('rag-chunks').classList.add('visible');
+    }
+  });
+
+  // ── ArXiv ───────────────────────────────────────────────────────────────────
+  document.getElementById('arxiv-btn').addEventListener('click', async () => {
+    const q   = document.getElementById('arxiv-query').value.trim();
+    const max = document.getElementById('arxiv-max').value;
+    if (!q) return;
+    hideError('arxiv-error');
+    setLoading('arxiv-btn', 'arxiv-spin', true);
+
+    const data = await post('/api/arxiv', { query: q, max_results: parseInt(max) });
+    setLoading('arxiv-btn', 'arxiv-spin', false);
+
+    if (data.error) { showError('arxiv-error', data.error); return; }
+
+    const grid = document.getElementById('arxiv-results');
+    grid.innerHTML = '';
+
+    if (!data.articles || !data.articles.length) {
+      grid.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Aucun article trouvé.</p>';
+      return;
+    }
+
+    data.articles.forEach((a, i) => {
+      const authors = a.authors.join(', ') || 'Auteurs inconnus';
+      grid.innerHTML += `
+        <div class="arxiv-card">
+          <div class="arxiv-title">
+            <a href="${a.link}" target="_blank" rel="noopener">${a.title}</a>
+          </div>
+          <div class="arxiv-meta">
+            <span class="arxiv-tag">arXiv</span>
+            <span>📅 ${a.published}</span>
+            <span>👤 ${authors}</span>
+          </div>
+          <div class="arxiv-summary">${a.summary}</div>
+        </div>`;
+    });
+  });
+
+  // ── Résumer ─────────────────────────────────────────────────────────────────
+  document.getElementById('resume-btn').addEventListener('click', async () => {
+    const s = document.getElementById('resume-sujet').value.trim();
+    if (!s) return;
+    hideError('resume-error');
+    setLoading('resume-btn', 'resume-spin', true);
+
+    const data = await post('/api/resume', { sujet: s });
+    setLoading('resume-btn', 'resume-spin', false);
+
+    if (data.error) { showError('resume-error', data.error); return; }
+    showAnswer('resume-answer', data.answer);
+  });
+
+  // ── Expliquer ────────────────────────────────────────────────────────────────
+  document.getElementById('explain-btn').addEventListener('click', async () => {
+    const c = document.getElementById('explain-concept').value.trim();
+    if (!c) return;
+    hideError('explain-error');
+    setLoading('explain-btn', 'explain-spin', true);
+
+    const data = await post('/api/expliquer', { concept: c });
+    setLoading('explain-btn', 'explain-spin', false);
+
+    if (data.error) { showError('explain-error', data.error); return; }
+    showAnswer('explain-answer', data.answer);
+  });
+
+  // ── Plan ─────────────────────────────────────────────────────────────────────
+ document.getElementById('plan-btn').addEventListener('click', async () => {
+    const s = document.getElementById('plan-sujet').value.trim();
+    if (!s) return;
+    hideError('plan-error');
+    setLoading('plan-btn', 'plan-spin', true);
+
+    try {
+      const data = await post('/api/plan', { sujet: s });
+      setLoading('plan-btn', 'plan-spin', false);
+      console.log('Plan response:', data);
+      if (data.error) { showError('plan-error', data.error); return; }
+      const box = document.getElementById('plan-answer');
+      box.textContent = data.answer || 'Réponse vide reçue';
+      box.style.display = 'block';
+      box.classList.add('visible');
+    } catch(e) {
+      setLoading('plan-btn', 'plan-spin', false);
+      showError('plan-error', 'Erreur: ' + e.message);
+      console.error(e);
+    }
+  });
+
+  // ── Agent ─────────────────────────────────────────────────────────────────────
+  document.getElementById('agent-btn').addEventListener('click', async () => {
+    const q = document.getElementById('agent-question').value.trim();
+    if (!q) return;
+    hideError('agent-error');
+    setLoading('agent-btn', 'agent-spin', true);
+
+    const data = await post('/api/agent', { question: q });
+    setLoading('agent-btn', 'agent-spin', false);
+
+    if (data.error) { showError('agent-error', data.error); return; }
+    showAnswer('agent-answer', data.answer);
+  });
+
+  function fillAgent(text) {
+    document.getElementById('agent-question').value = text;
+    document.getElementById('agent-question').focus();
+  }
+</script>
+</body>
+</html>

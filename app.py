@@ -17,9 +17,6 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-
-# ─── Configuration ────────────────────────────────────────────────────────────
-
 DATA_DIR        = Path("data")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 GROQ_MODEL      = "llama-3.3-70b-versatile"
@@ -31,14 +28,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Global singletons (built once at startup)
 _retriever = None
 _llm       = None
 _prompt    = None
 _subjects  = []
-
-
-# ─── Startup : charger les PDF et construire FAISS ───────────────────────────
 
 def load_pdf_documents(data_dir: Path):
     pdf_paths = sorted(data_dir.rglob("*.pdf"))
@@ -108,9 +101,6 @@ Question :
     _subjects = get_subjects()
     print(f"[INIT] {len(docs)} pages | {len(chunks)} chunks | {len(_subjects)} matières")
 
-
-# ─── Helpers RAG ─────────────────────────────────────────────────────────────
-
 def format_context(docs):
     parts = []
     for i, doc in enumerate(docs, 1):
@@ -139,9 +129,6 @@ def format_sources(docs):
             seen.add(key)
             items.append(key)
     return ", ".join(items)
-
-
-# ─── Helpers ArXiv ───────────────────────────────────────────────────────────
 
 def search_arxiv(query: str, max_results: int = 5):
     url = (
@@ -179,9 +166,6 @@ def search_arxiv(query: str, max_results: int = 5):
     except Exception as e:
         print(f"[ArXiv] Erreur : {e}")
         return []
-
-
-# ─── Outils Agent (TP 3) ─────────────────────────────────────────────────────
 
 @tool
 def calculer_moyenne(notes_json: str) -> str:
@@ -260,9 +244,6 @@ def run_agent(question: str) -> str:
 
     return first.content
 
-
-# ─── Routes Flask ─────────────────────────────────────────────────────────────
-
 @app.route("/")
 def index():
     return render_template("index.html", subjects=_subjects)
@@ -272,8 +253,6 @@ def index():
 def api_subjects():
     return jsonify({"subjects": _subjects})
 
-
-# 1. RAG — Questions sur les PDF
 @app.route("/api/rag", methods=["POST"])
 def api_rag():
     data     = request.get_json()
@@ -305,8 +284,6 @@ def api_rag():
 
     return jsonify({"answer": response, "chunks": chunks_info})
 
-
-# 2. ArXiv — Chercher des articles
 @app.route("/api/arxiv", methods=["POST"])
 def api_arxiv():
     data    = request.get_json()
@@ -318,8 +295,6 @@ def api_arxiv():
     articles = search_arxiv(query, max_res)
     return jsonify({"articles": articles})
 
-
-# 3. Résumer un cours / chapitre
 @app.route("/api/resume", methods=["POST"])
 def api_resume():
     data  = request.get_json()
@@ -347,8 +322,6 @@ Extraits :
 
     return jsonify({"answer": response})
 
-
-# 4. Expliquer un concept simplement
 @app.route("/api/expliquer", methods=["POST"])
 def api_expliquer():
     data    = request.get_json()
@@ -376,8 +349,6 @@ Contexte :
 
     return jsonify({"answer": response})
 
-
-# 5. Générer un plan de révision (agent)
 @app.route("/api/plan", methods=["POST"])
 def api_plan():
     data  = request.get_json()
@@ -385,7 +356,6 @@ def api_plan():
     if not sujet:
         return jsonify({"error": "Sujet vide."}), 400
 
-    # Utiliser directement le LLM au lieu de l'agent
     prompt = f"""
 Tu es un assistant pédagogique. Génère un plan de révision détaillé et structuré 
 en français pour le sujet suivant. Utilise des titres, sous-titres et points clés.
@@ -399,7 +369,7 @@ Sujet : {sujet}
         return jsonify({"answer": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-# 6. Agent général (calcul, définition, etc.)
+
 @app.route("/api/agent", methods=["POST"])
 def api_agent():
     data     = request.get_json()
@@ -409,9 +379,6 @@ def api_agent():
 
     answer = run_agent(question)
     return jsonify({"answer": answer})
-
-
-# ─── Main ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     init_rag()

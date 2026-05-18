@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
-    /* ── Variables ─────────────────────────────────────── */
     :root {
       --bg:        #0a0c10;
       --surface:   #10131a;
@@ -23,7 +22,6 @@
       --tag-bg:    #1a2035;
     }
 
-    /* ── Reset ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -34,7 +32,6 @@
       overflow-x: hidden;
     }
 
-    /* ── Noise overlay ─────────────────────────────────── */
     body::before {
       content: '';
       position: fixed; inset: 0;
@@ -50,10 +47,8 @@
     .blob-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -150px; }
     .blob-2 { width: 500px; height: 500px; background: var(--accent2); bottom: -150px; right: -100px; }
 
-    /* ── Layout ────────────────────────────────────────── */
     .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
-    /* ── Sidebar ───────────────────────────────────────── */
     .sidebar {
       width: 260px; flex-shrink: 0;
       background: var(--surface);
@@ -136,10 +131,8 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* ── Main content ──────────────────────────────────── */
     .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
-    /* Header */
     .topbar {
       padding: 20px 32px;
       border-bottom: 1px solid var(--border);
@@ -170,10 +163,8 @@
       50%      { opacity: 0.4; }
     }
 
-    /* Content area */
     .content { flex: 1; padding: 32px; max-width: 900px; }
 
-    /* ── Panels ────────────────────────────────────────── */
     .panel { display: none; animation: fadeUp 0.3s ease; }
     .panel.active { display: block; }
 
@@ -190,7 +181,6 @@
     }
     .panel-desc { color: var(--muted); font-size: 0.88rem; }
 
-    /* ── Cards ─────────────────────────────────────────── */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -198,7 +188,6 @@
       margin-bottom: 20px;
     }
 
-    /* ── Form elements ─────────────────────────────────── */
     label {
       display: block; font-size: 0.78rem; font-weight: 500;
       color: var(--muted); margin-bottom: 8px;
@@ -221,7 +210,6 @@
     textarea { min-height: 90px; }
     select option { background: var(--surface); }
 
-    /* ── Buttons ───────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 11px 22px; border-radius: 9px;
@@ -243,7 +231,6 @@
     }
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* ── Spinner ───────────────────────────────────────── */
     .spinner {
       width: 16px; height: 16px; border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.25);
@@ -253,7 +240,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Answer box ────────────────────────────────────── */
     .answer-box {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 10px; padding: 20px;
@@ -264,7 +250,6 @@
     .answer-box.visible { display: block; animation: fadeUp 0.3s ease; }
     .answer-box strong { color: var(--accent); }
 
-    /* ── Chunk pills ───────────────────────────────────── */
     .chunks-area { margin-top: 12px; display: none; }
     .chunks-area.visible { display: block; }
     .chunks-title {
@@ -284,7 +269,6 @@
     }
     .chunk-preview { color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
 
-    /* ── ArXiv cards ───────────────────────────────────── */
     .arxiv-grid { display: grid; gap: 14px; margin-top: 16px; }
     .arxiv-card {
       background: var(--card); border: 1px solid var(--border);
@@ -316,12 +300,10 @@
       padding: 2px 8px; border-radius: 4px; font-size: 0.68rem;
     }
 
-    /* ── Row util ──────────────────────────────────────── */
     .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
     .row .field { flex: 1; min-width: 180px; }
     .row .field-sm { width: 120px; flex-shrink: 0; }
 
-    /* ── Error ─────────────────────────────────────────── */
     .error-msg {
       background: rgba(251,113,133,0.1); border: 1px solid rgba(251,113,133,0.3);
       border-radius: 8px; padding: 12px 16px;
@@ -330,19 +312,16 @@
     }
     .error-msg.visible { display: block; }
 
-    /* ── Accent coloring per panel ─────────────────────── */
     #panel-arxiv   .btn-primary { background: linear-gradient(135deg,var(--accent2),#7c5cde); }
     #panel-resume  .btn-primary { background: linear-gradient(135deg,var(--accent3),#059669); }
     #panel-explain .btn-primary { background: linear-gradient(135deg,var(--accent4),#ea580c); }
     #panel-plan    .btn-primary { background: linear-gradient(135deg,var(--accent5),#e11d48); }
     #panel-agent   .btn-primary { background: linear-gradient(135deg,#fbbf24,#d97706); }
 
-    /* ── Scrollbar ─────────────────────────────────────── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ── Responsive ────────────────────────────────────── */
     @media (max-width: 768px) {
       .sidebar { display: none; }
       .content { padding: 20px; }
@@ -357,7 +336,6 @@
 
 <div class="layout">
 
-  <!-- ── Sidebar ── -->
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-mark">
@@ -420,7 +398,6 @@
     </div>
   </aside>
 
-  <!-- ── Main ── -->
   <main class="main">
     <div class="topbar">
       <div class="page-title">Assistant <span>Académique</span></div>
@@ -432,7 +409,6 @@
 
     <div class="content">
 
-      <!-- ── Panel 1 : Questions PDF (RAG) ── -->
       <div class="panel active" id="panel-rag">
         <div class="panel-header">
           <div class="panel-title">📖 Questions sur les cours</div>
@@ -459,7 +435,6 @@
         </div>
       </div>
 
-      <!-- ── Panel 2 : ArXiv ── -->
       <div class="panel" id="panel-arxiv">
         <div class="panel-header">
           <div class="panel-title">🔬 Recherche arXiv</div>
@@ -494,7 +469,6 @@
         <div class="arxiv-grid" id="arxiv-results"></div>
       </div>
 
-      <!-- ── Panel 3 : Résumer ── -->
       <div class="panel" id="panel-resume">
         <div class="panel-header">
           <div class="panel-title">📝 Résumer un cours</div>
@@ -516,7 +490,6 @@
         <div class="answer-box" id="resume-answer"></div>
       </div>
 
-      <!-- ── Panel 4 : Expliquer ── -->
       <div class="panel" id="panel-explain">
         <div class="panel-header">
           <div class="panel-title">💡 Expliquer un concept</div>
@@ -538,7 +511,6 @@
         <div class="answer-box" id="explain-answer"></div>
       </div>
 
-      <!-- ── Panel 5 : Plan de révision ── -->
       <div class="panel" id="panel-plan">
         <div class="panel-header">
           <div class="panel-title">🗂️ Plan de révision</div>
@@ -560,7 +532,6 @@
         <div class="answer-box" id="plan-answer"></div>
       </div>
 
-      <!-- ── Panel 6 : Agent ── -->
       <div class="panel" id="panel-agent">
         <div class="panel-header">
           <div class="panel-title">🤖 Agent IA</div>
@@ -599,12 +570,12 @@
         <div class="answer-box" id="agent-answer"></div>
       </div>
 
-    </div><!-- /content -->
+    </div>
   </main>
 </div>
 
 <script>
-  // ── Navigation ──────────────────────────────────────────────────────────────
+
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -614,7 +585,7 @@
     });
   });
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+
   function setLoading(btnId, spinId, loading) {
     const btn  = document.getElementById(btnId);
     const spin = document.getElementById(spinId);
@@ -669,7 +640,7 @@
       });
     });
 
-  // ── RAG ─────────────────────────────────────────────────────────────────────
+
   document.getElementById('rag-btn').addEventListener('click', async () => {
     const q = document.getElementById('rag-question').value.trim();
     if (!q) return;
@@ -698,7 +669,7 @@
     }
   });
 
-  // ── ArXiv ───────────────────────────────────────────────────────────────────
+
   document.getElementById('arxiv-btn').addEventListener('click', async () => {
     const q   = document.getElementById('arxiv-query').value.trim();
     const max = document.getElementById('arxiv-max').value;
@@ -736,7 +707,7 @@
     });
   });
 
-  // ── Résumer ─────────────────────────────────────────────────────────────────
+
   document.getElementById('resume-btn').addEventListener('click', async () => {
     const s = document.getElementById('resume-sujet').value.trim();
     if (!s) return;
@@ -750,7 +721,7 @@
     showAnswer('resume-answer', data.answer);
   });
 
-  // ── Expliquer ────────────────────────────────────────────────────────────────
+
   document.getElementById('explain-btn').addEventListener('click', async () => {
     const c = document.getElementById('explain-concept').value.trim();
     if (!c) return;
@@ -764,7 +735,7 @@
     showAnswer('explain-answer', data.answer);
   });
 
-  // ── Plan ─────────────────────────────────────────────────────────────────────
+
  document.getElementById('plan-btn').addEventListener('click', async () => {
     const s = document.getElementById('plan-sujet').value.trim();
     if (!s) return;
@@ -787,7 +758,7 @@
     }
   });
 
-  // ── Agent ─────────────────────────────────────────────────────────────────────
+
   document.getElementById('agent-btn').addEventListener('click', async () => {
     const q = document.getElementById('agent-question').value.trim();
     if (!q) return;
